@@ -1,0 +1,205 @@
+{
+  "name": "QUIZ 1 {N8N}",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "id": "6bad6760-9bf8-4efe-bf70-761e325bbc4c",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -176,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.nasa.gov/rss/dyn/breaking_news.rss",
+        "options": {}
+      },
+      "id": "1aa473f8-11e5-4bee-8235-c553b9ce9f0e",
+      "name": "RSS Read1",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        288,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "1ee52961-e3ec-4bdb-b425-398ba67a8188",
+      "name": "Merge Feeds",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        640,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.sciencedaily.com/rss/all.xml",
+        "options": {}
+      },
+      "id": "f6156c42-f239-47d0-b682-892668d9d34c",
+      "name": "RSS Read",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        304,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.ted.com/talks/rss",
+        "options": {}
+      },
+      "id": "25379853-f741-4c4d-97dd-685fd5ec976a",
+      "name": "RSS Read2",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        304,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst items = $input.all().map(item => item.json);\n\nconst subject =\n  \"Daily RSS News Digest | Space, Science & Inspiring Ideas\";\n\nconst categories = {\n  \"NASA - Space & Universe\": [],\n  \"ScienceDaily - Science & Discoveries\": [],\n  \"TED - Motivation & Ideas\": [],\n  \"Other RSS News\": []\n};\n\nfunction cleanText(value) {\n  return String(value || \"\")\n    .replace(/<[^>]*>/g, \" \")\n    .replace(/&nbsp;/g, \" \")\n    .replace(/&amp;/g, \"&\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nfor (const item of items) {\n  const url = item.link || item.url || \"\";\n  const domain = url.toLowerCase();\n\n  let category = \"Other RSS News\";\n\n  if (domain.includes(\"nasa.gov\")) {\n    category = \"NASA - Space & Universe\";\n  } else if (domain.includes(\"sciencedaily.com\")) {\n    category = \"ScienceDaily - Science & Discoveries\";\n  } else if (domain.includes(\"ted.com\")) {\n    category = \"TED - Motivation & Ideas\";\n  }\n\n  const title = cleanText(item.title) || \"Untitled Article\";\n\n  const summary = cleanText(\n    item.contentSnippet ||\n    item.description ||\n    item.summary ||\n    item[\"content:encoded\"] ||\n    item.content ||\n    \"No summary was provided in the RSS feed.\"\n  );\n\n  const date = cleanText(\n    item.isoDate || item.pubDate || item.date || \"\"\n  );\n\n  if (categories[category].length >= 10) continue;\n\n  categories[category].push({\n    title,\n    date: date || \"Date unavailable\",\n    summary: summary.slice(0, 2000),\n    url: url || \"Article URL unavailable\"\n  });\n}\n\nlet body =\n  \"Hello!\\n\\n\" +\n  \"Welcome to your Daily RSS News Digest. \" +\n  \"Here are the latest articles received from your selected RSS feeds.\\n\";\n\nfor (const [category, articles] of Object.entries(categories)) {\n  body += \"\\n\\n================================\\n\";\n  body += category + \"\\n\";\n  body += \"================================\\n\";\n\n  if (articles.length === 0) {\n    body += \"No new articles received from this source.\\n\";\n    continue;\n  }\n\n  articles.forEach((article, index) => {\n    body += `\\n${index + 1}. ${article.title}\\n`;\n    body += `Published: ${article.date}\\n`;\n    body += `Summary: ${article.summary}\\n`;\n    body += `Original Link: ${article.url}\\n`;\n  });\n}\n\nbody +=\n  \"\\n\\nThank you for reading your Daily News Digest!\\n\" +\n  \"Stay curious and keep learning.\";\n\nreturn [\n  {\n    json: {\n      subject,\n      body,\n      totalArticles: items.length\n    }\n  }\n];\n\n\n\n"
+      },
+      "id": "d41360aa-a255-463a-a9b1-2940f975dffc",
+      "name": "Code in JavaScript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "eshakashif1707@gmail.com",
+        "subject": "Daily AI, Technology & Business News",
+        "message": "={{ $json.subject }}{{ $json.body }}",
+        "options": {}
+      },
+      "id": "ba6711c5-2e5c-4a70-a3ed-a4ef999df6bb",
+      "name": "Send a message",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1168,
+        96
+      ],
+      "webhookId": "eeec3ce6-2fbd-4e68-bf9a-665bb2858656",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "6z5obJZnaA6iPNyk",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "RSS Read1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Read2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read1": {
+      "main": [
+        [
+          {
+            "node": "Merge Feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Feeds": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Merge Feeds",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "RSS Read2": {
+      "main": [
+        [
+          {
+            "node": "Merge Feeds",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "de14b8bf-3fab-460e-8e24-40b49192fcdd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7c67a9575c9820eb2b22c16221c75e7720191b7ae5b8e7e9899aafd28c01be15"
+  },
+  "nodeGroups": [],
+  "id": "0gLkLi6vQXJylrav",
+  "tags": []
+}
